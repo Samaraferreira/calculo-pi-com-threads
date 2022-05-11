@@ -2,14 +2,14 @@ import java.lang.Math;
 
 public class CalculaPI {
 
-    public static final double t = 1000000;
+    public static final double QUANTIDADE_PARCELAS = 1000000;
 
     public static void main(String[] args) {
         double soma = 0, pi;
         long tempoInicial = System.currentTimeMillis();
         
         double parcela = 0;
-        for(int i = 0; i <= t; i++){
+        for(int i = 0; i <= QUANTIDADE_PARCELAS; i++){
             parcela = calcularParcela(i);
             soma += parcela;
         }
@@ -18,8 +18,8 @@ public class CalculaPI {
         long tempoFinal = System.currentTimeMillis();
         long tempo = (tempoFinal - tempoInicial);
         
-        System.out.println(pi);
-        System.out.println(tempo + "ms");
+        System.out.println("Valor do pi: " + pi);
+        System.out.println("Tempo de execução: " + tempo + "ms");
     }
 
     private static double calcularParcela(int i) {
