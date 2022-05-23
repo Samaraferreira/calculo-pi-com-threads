@@ -1,7 +1,6 @@
 # Calcular o valor de PI usando threads
-## Alunos
--> Samara Ferreira
--> Martinho Lutero
+#### Alunos
+Samara Ferreira - Martinho Lutero
 
 ## Resultados
 ### 1 Thread
