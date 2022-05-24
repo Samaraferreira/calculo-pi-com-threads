@@ -1,79 +1,82 @@
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 public class CalcPI {
 
+  static final int[] NUM_THREADS = { 1, 2, 4, 8, 16, 32 };
   static final int NUM_EXEC = 5;
 
   public static void main(String[] args) throws InterruptedException {
-    Result[] results = new Result[NUM_EXEC];
     Scanner scanner = new Scanner(System.in);
-
-    System.out.print("\n\n### Calculo de PI ###\n\n");
 
     System.out.print("Digite a quantidade de termos: ");
     int numTerms = scanner.nextInt();
-    System.out.print("Digite a quantidade de threads: ");
-    int numThreads = scanner.nextInt();
 
-    for (int i = 0; i < NUM_EXEC; i++) {
-      long start = System.nanoTime();
+    for (int thread = 0; thread < NUM_THREADS.length; thread++) {
+      Result[] results = new Result[NUM_EXEC];
+      int numThreads = NUM_THREADS[thread];
+      System.out.printf("\n\n### Calculo de PI com %d threads ###\n\n", numThreads);
 
-      CalcPiThread[] threads = new CalcPiThread[numThreads];
-      int numTermsPerThread = numTerms / numThreads;
-      int numberOfTermsProcessed = 0;
+      for (int i = 0; i < NUM_EXEC; i++) {
+        long start = System.nanoTime();
 
-      for (int j = 0; j < numThreads; j++) {
-        threads[j] = new CalcPiThread(numberOfTermsProcessed, numTermsPerThread);
-        threads[j].start();
-        numberOfTermsProcessed += numTermsPerThread;
+        CalcPiThread[] threads = new CalcPiThread[numThreads];
+        int numTermsPerThread = numTerms / numThreads;
+        int numberOfTermsProcessed = 0;
+
+        for (int j = 0; j < numThreads; j++) {
+          threads[j] = new CalcPiThread(numberOfTermsProcessed, numTermsPerThread);
+          threads[j].start();
+          numberOfTermsProcessed += numTermsPerThread;
+        }
+
+        double pi = 0;
+        for (int j = 0; j < numThreads; j++) {
+          threads[j].join();
+          pi += threads[j].getPartialValueOfPi(); // soma os resultados parciais de cada thread chegando no valor de pi
+        }
+
+        double runtime = (double) TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+        results[i] = new Result(pi, runtime);
       }
 
-      double pi = 0;
-      for (int j = 0; j < numThreads; j++) {
-        threads[j].join();
-        pi += threads[j].getPartialValueOfPi(); // soma os resultados parciais de cada thread chegando no valor de pi
+      double averageRuntime = getAverageRuntime(results);
+      double standardDeviation = getStandardDeviation(results, averageRuntime);
+
+      System.out.println("\nResultados ( PI - Tempo de execução ):");
+      for (int i = 0; i < NUM_EXEC; i++) {
+        results[i].showResult();
       }
 
-      double runtime = (double) (System.nanoTime() - start) / (double) 1000_000;
-
-      results[i] = new Result(pi, runtime);
+      System.out.printf("\nDuração média: %.2f ms\n", averageRuntime);
+      System.out.printf("Desvio padrão: %.2f\n", standardDeviation);
     }
-
-    double averageRuntime = getAverageRuntime(results);
-    double standardDeviation = getStandardDeviation(results, averageRuntime);
-
-    System.out.println("\nResultados ( PI - Tempo de execução ):");
-    for (int i = 0; i < NUM_EXEC; i++) {
-      results[i].showResult();
-    }
-    System.out.printf("\nDuração média: %.2f ms\n", averageRuntime);
-    System.out.printf("Desvio padrão: %.2f\n", standardDeviation);
-    System.out.printf("Coeficiente de variação: %.2f%%\n", (standardDeviation / averageRuntime) * 100);
   }
 
   private static class CalcPiThread extends Thread {
-    private double partial_pi;
+    private double partialPi;
     private int numberOfTermsProcessed;
     private int numberOfTermsToProcess;
 
     CalcPiThread(int numberOfTermsProcessed, int numTerms) {
       this.numberOfTermsProcessed = numberOfTermsProcessed;
       this.numberOfTermsToProcess = numTerms;
-      this.partial_pi = 0;
+      this.partialPi = 0;
     }
 
     @Override
     public void run() {
       for (int currentTerm = this.numberOfTermsProcessed; currentTerm < (this.numberOfTermsProcessed
           + this.numberOfTermsToProcess); currentTerm++) {
-        partial_pi += Math.pow(-1, currentTerm) / (2 * currentTerm + 1);
+        partialPi += Math.pow(-1, currentTerm) / (2 * currentTerm + 1);
       }
 
-      partial_pi *= 4;
+      partialPi *= 4;
     }
 
     public double getPartialValueOfPi() {
-      return this.partial_pi;
+      return this.partialPi;
     }
   }
 
@@ -81,7 +84,7 @@ public class CalcPI {
     double deviation = 0;
     for (Result result : results) {
       double aux = result.getRuntime() - averageRuntime;
-      deviation += Math.pow(aux, 2) / (double) results.length;
+      deviation += Math.pow(aux, 2) / results.length;
     }
     return Math.sqrt(deviation);
   }
@@ -91,6 +94,6 @@ public class CalcPI {
     for (Result result : results) {
       sum += result.getRuntime();
     }
-    return sum / (double) results.length;
+    return sum / results.length;
   }
 }
